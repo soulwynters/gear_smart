@@ -42,13 +42,9 @@ input[type="checkbox"] {
 	width: 230px;
 }
 
-
-
-
-
-
-
-
+#setupPage{
+	overflow:hidden;
+}
 
 .ui-item.ui-item-active::before{
 	background-color: rgba(2, 129, 209, 1);

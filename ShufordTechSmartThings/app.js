@@ -5,7 +5,7 @@ var RoutinesPageRan = false;
 var setupPageRan = false;
 
 //Encrypt Key (This should be set by the user)
-var EncryptKey = 166856;
+var EncryptKey = 2092342;
 
 //Databases
 var Access_Token = Decrypt(localStorage.getItem("token_DB"));
@@ -47,7 +47,7 @@ document.addEventListener("pageshow", function (e) {
 		SwitchPage();
 	}else if(page == "routinesPage"){
 		RoutinesPage();
-	}else if(page == "setupPage"){
+	}else if(page == "setupPage" && setupPageRan == false){
 		SetupPage();
 	}
 });
@@ -70,34 +70,74 @@ function SetupPage(){
 	}else{
 		console.log("SetupPage() - The user has seen this page before");
 	}
-
-	//This is the only time the app needs to access anything outside of SmartThings.
-	$('#submitsetup').click(function(){
-		$.post( AuthScriptUrl+"?k="+$('#keysetup').val(), function( data ) {
-			console.log(data);
-				
-			try {
-				var obj = jQuery.parseJSON(data);
-			} catch (e) {
-				alert("There was an error!");
-				console.log(e);
-				return;
+	
+	tizen.power.request("SCREEN", "SCREEN_NORMAL");
+	
+	var auth_code = -1;
+	//get the pairing code from api endpoint
+	$.ajax({
+		url: "https://timothyfenton.com/stconnector/api/v1/authentries/create",
+		type: "POST",
+		data: { },
+		headers: {
+		    "Authorization": "Token 98b7d003-4701-40fb-8295-b2dded696f26"
+		  },
+		success: function(json){
+			//assign it to local variable
+			auth_code = json.AuthID;
+			
+			//display it for user to see
+			$('#smarterauthtoken').html(auth_code);
+			
+			//if the auth code was set, lets start polling
+			if(auth_code != -1){
+				getStatus(auth_code);
+			}else{
+				alert("could not retrieve auth code from server");
 			}
-				
-			console.log(obj.TOKEN);
-			console.log(obj.URL);
-			localStorage.setItem("token_DB", Encrypt(obj.TOKEN));
-			localStorage.setItem("AccessUrl_DB", Encrypt(obj.URL));
-			Access_Token = obj.TOKEN;
-			Access_Url = obj.URL;
-
-			//BUG:: tau.changePage("mainPage"); //ALL UI COMPONETS BREAK, so lets just restart for now... 
-			alert('Setup Compleate! App will now close, please restart it!');
-			tizen.application.getCurrentApplication().exit();
-		});
+		},
+		error: function(xhr, textStatus, errorThrown)
+		{
+			console.log("Error code: " + xhr.status);
+			console.log("Error message: " + errorThrown);
+		}
 	});
 }
 //------------------------------------------------------------------------------------Setup Page
+
+function getStatus(auth_id)
+{
+	$.ajax({
+		url: "https://timothyfenton.com/stconnector/api/v1/authentries/getstatus",
+		type: "POST",
+		contentType: "application/json",
+		data: JSON.stringify({AuthID:auth_id}),
+		headers: {
+		    "Authorization": "Token 98b7d003-4701-40fb-8295-b2dded696f26"
+		  },
+		retryLimit: 30,
+		success: function(json){
+				
+			console.log(json.AuthToken);
+			localStorage.setItem("token_DB", Encrypt(json.AuthToken));
+			localStorage.setItem("AccessUrl_DB", Encrypt(json.AuthURL));
+			Access_Token = json.AuthToken;
+			Access_Url = json.AuthURL;
+			
+			tizen.power.release("SCREEN"); // Release SCREEN resource.
+			
+			//BUG:: tau.changePage("mainPage"); //ALL UI COMPONETS BREAK, so lets just restart for now... 
+			alert('Setup Complete! App will now close, please restart it!');
+			tizen.application.getCurrentApplication().exit();
+		},
+		error: function(xhr, textStatus, errorThrown)
+		{
+			if(xhr.status == '400'){
+			    setTimeout( function(){ getStatus(auth_id)}, 20000 );
+			}
+		}
+	});
+}
 
 //------------------------------------------------------------------------------------RoutinesPage
 function RoutinesPage(){
@@ -417,16 +457,15 @@ function SwitchPageGetData(){
 				try {
 					var obj = jQuery.parseJSON(Response);
 				} catch (e) {
-					alert("There was an error!");
 					console.log(e);
 					return;
 				}		    	
 		  
 		    	console.log(obj);
 		    	if(obj.message){
-		    		alert(obj.message);
+		    		alert("error message: " + obj.message);
 		    	}else if(obj.error){
-		    		alert(obj.error);
+		    		alert("error: " + obj.error);
 		    	}else{
 		    		alert("There was a problem, could not get switches!");
 		    	}

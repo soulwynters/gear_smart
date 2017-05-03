@@ -46,6 +46,8 @@ document.addEventListener("pageshow", function (e) {
 		case "setupPage":
 			SetupPage();
 			break;
+		case "processingPage":
+			break;
 		default:
 			alert("How did this even happen?? Restart the app.");
 			tizen.application.getCurrentApplication().exit();
@@ -75,6 +77,10 @@ document.addEventListener( "pagebeforehide", function(e) {
 //------------------------------------------------------------------------------------Start Setup Page
 function SetupPage(){
 	CheckInternet();
+	
+	//bug: this runs twice? lets account for that.
+	if(setupPageRan)
+		return;
 	
 	//setup has run
 	setupPageRan = true;
@@ -106,10 +112,11 @@ function SetupPage(){
 			}else{
 				alert("could not retrieve auth code from server");
 			}
+			
 		},
-		error: function(xhr, textStatus, errorThrown)
+		error: function(e)
 		{
-			alert("server error ocurred, please contact venumx@live.com");
+			errorHandling(e, "server error ocurred, please contact venumx@live.com");
 		}
 	});
 }
@@ -144,6 +151,7 @@ function getStatus(auth_id)
 			tizen.power.release("SCREEN");
 			
 			//let's just try this
+			alert("Congratulations! Setup is complete.");
 			tau.changePage("mainPage");
 			//alert('Setup Complete! App will now close, please restart it!');
 			//tizen.application.getCurrentApplication().exit();
@@ -151,7 +159,7 @@ function getStatus(auth_id)
 		error: function(xhr, textStatus, errorThrown)
 		{
 			//if we reported a 400 this means auth is not ready yet, try again in 20 seconds
-			if(xhr.status === '400'){
+			if(xhr.status == '400'){
 			    setTimeout( function(){ getStatus(auth_id); }, pollingInt );
 			}
 		}
@@ -326,14 +334,24 @@ function MainPage(){
 	if(Access_Token){
 		//has the user been here before?
 		if(MainPageRan === false){
+			alert('MP:NR');
 			//he has now.
 			MainPageRan=true;
 		}else{	
+			alert('MP:R');
 			//hes been here
 		}
 	}else{
-		//access token is not set. 
-		tau.changePage("setupPage");
+		alert('MP:NAT');
+		//lets try again?
+		Access_Token = Decrypt(localStorage.getItem("token_DB"));
+		
+		if(!Access_Token)
+		{	
+			alert('MP:NATC');
+			//access token is not set. 
+			tau.changePage("setupPage");
+		}
 	}
 }
 (function(tau) {
@@ -421,7 +439,7 @@ function SwitchPageGetData(){
 				var value = element.value;
 				var type = element.type;					    
 				var checked = "";
-				if(value==="on"){ checked = "checked"; }			        	
+				if(value == "on"){ checked = "checked"; }			        	
 				$('#Switches').append('\
 					<li class="li-has-checkbox">\
 						<div class="ui-marquee ui-marquee-gradient marquee">'+label+'</div>\
@@ -449,7 +467,9 @@ function SwitchPageGetData(){
 			console.log(e);
 			return;
 		}
-	}else{ 
+	}
+	else
+	{ 
 		//We couldn't find the switches database data, so lets build it.
 		
 		//set the processing message and redirect to processing page
@@ -484,8 +504,8 @@ function SwitchPageGetData(){
 	}
 }
 
-function SwitchPage_Buttons(){
-	
+function SwitchPage_Buttons()
+{	
 	//hanndle the click of the refresh switches button
 	$('#RefreshSwitchData').click(function(){
 		//clear the switch db and global var
@@ -568,18 +588,28 @@ function SwitchPage_Buttons(){
 }
 //------------------------------------------------------------------------------------End Switch Page
 
+//-----------------------------------------HANDLERS----------------------------------------------//
+
 //------------------------------------------------------------------------------------App's Back Button Handler
 window.addEventListener( 'tizenhwkey', function( ev ){
-	console.log("Back Key Hit");
-	var page = document.getElementsByClassName('ui-page-active')[0],
-	pageid = page ? page.id : "";
+	//get the active page
+	var page = document.getElementsByClassName('ui-page-active')[0];
+	
+	//set pageid based on the results from page
+	var pageid = page ? page.id : "";
+	
+	//if the back key was pushed
 	if(ev.keyName === "back") {
-		if( pageid === "mainPage" ) {
-           tizen.application.getCurrentApplication().exit();
-		}else if(pageid === "setupPage"){
-			tizen.application.getCurrentApplication().exit();
-		} else {
-	         tau.changePage("mainPage");
+		//switch on page id - changed to switch for readability
+		switch(pageid)
+		{
+			//if it's main page or setup page, just exit - if not lets go back to mainpage.
+			case "mainPage":
+			case "setupPage":
+				tizen.application.getCurrentApplication().exit();
+				break;
+			default:
+				tau.changePage("mainPage");
 		}
 	}
 });
@@ -613,8 +643,10 @@ function errorHandling(e, errorMsg)
 //------------------------------------------------------------------------------------End Error Handling
 
 //------------------------------------------------------------------------------------Start Check Internet Status
-function CheckInternet(){
-	if(navigator.onLine === false){
+function CheckInternet()
+{
+	if(navigator.onLine === false)
+	{
 		//Maybe this should be done each time before an api call is fired incase we lose connection after starting the app..
 		//If so, move isOnline = navigator.onLine also
 		alert('No internet connection, please connect first.');
@@ -635,42 +667,80 @@ function ClearDatabase()
 	Access_Url = null;
 	switches_DB = null;
 	
+	//let the setup page run again
+	setupPageRan = false;
+	
 	//let the user know we just destroyed everything
 	alert("Database Cleared");
+	
+	//redirect to setup page
+	tau.changePage("setupPage");
 }
 //------------------------------------------------------------------------------------End Clear Database
 
 //------------------------------------------------------------------------------------Start Encryption Functions
 //temporary, quick but can be much stronger.
-function Encrypt(str) {
-    if (!str) {str = "";}
+function Encrypt(str) 
+{
+	//check if string is null
+    if (!str)
+    	str = "";
+    
+    //do some more checks on it
     str = (str === "undefined" || str === "null") ? "" : str;
-    try {
+    
+    try 
+    {
+    	//get the encryptkey we set
         var key = EncryptKey;
-        var pos = 0;
-        var ostr = '';
-        while (pos < str.length) {
+        
+        //initialize the vars
+        var pos = 0,
+        	ostr = '';
+        
+        //encryption algorithm
+        while (pos < str.length) 
+        {
             ostr = ostr + String.fromCharCode(str.charCodeAt(pos) ^ key);
             pos += 1;
         }
+        
         return ostr;
-    } catch (ex) {
+    } 
+    catch (ex) 
+    {
         return '';
     }
 }
-function Decrypt(str) {
-    if (!str) {str = "";}
+function Decrypt(str) 
+{
+	//check if string is null
+    if (!str)
+    	str = "";
+    
+    //do some more checks in string
     str = (str === "undefined" || str === "null") ? "" : str;
-    try {
+    
+    try 
+    {
+    	//get encrypt key we set
         var key = EncryptKey;
-        var pos = 0;
-        var ostr = '';
-        while (pos < str.length) {
+        
+        //initialize vars
+        var pos = 0,
+        	ostr = '';
+        
+        //decryption algorithm
+        while (pos < str.length) 
+        {
             ostr = ostr + String.fromCharCode(key ^ str.charCodeAt(pos));
             pos += 1;
         }
+        
         return ostr;
-    } catch (ex) {
+    } 
+    catch (ex) 
+    {
         return '';
     }
 }

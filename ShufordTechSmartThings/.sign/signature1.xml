@@ -4,15 +4,15 @@
 <SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"></SignatureMethod>
 <Reference URI="app.js">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
-<DigestValue>3QMBCmbKRz5+4Wa5l7Iz6w9QajCIIcQvlztFujMgEEI=</DigestValue>
+<DigestValue>HfpUHQT9ik86PDGHVWzxw1jikGZLCd3BbHNhZn2D4wo=</DigestValue>
 </Reference>
 <Reference URI="author-signature.xml">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
-<DigestValue>t965KhDrYRXQ19CtkCwUia++HVXbhiCHMZtCeiJ3IFc=</DigestValue>
+<DigestValue>985/rJmfVzcdiA1h7UNVRL11KcmvD8y6SaiPUP6j6Mo=</DigestValue>
 </Reference>
 <Reference URI="config.xml">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
-<DigestValue>QIpmjzpr+5nF2QUushgYclxKPFydkjHwQ/SdSON6PM0=</DigestValue>
+<DigestValue>p1QWqzKIe/1eRGHRQkB6Ug4UJlmGErJHezPfM40OGHo=</DigestValue>
 </Reference>
 <Reference URI="css%2Fimages%2Fb_more_option_delete_icon.png">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
@@ -1111,11 +1111,11 @@
 </Reference>
 </SignedInfo>
 <SignatureValue>
-nfIMIpzJQt/Yt3HVIAdNqkpeFCiN9j5akGggEKeo3kCFj27xIRnjLdU6R3Xiy6Ia+nAiE6KeLCvH
-hxmTAG1kZmShP6cH3RxSONuU7Ghzk1TXDSdzWBcp+r9vEbOqfYHLRFe1FwXvA024Oe3XqLKgd5jf
-4LtUpCMH8dnEM28UxRdF0ClCUeiThPdXEGWGeINF2kMZKNSTThF9YKlmUgMqmIwwJBPPeKe6EQB3
-6nl8w2kvBCa85wC2b/4IbaatI3j+Gf6Jk5xqWmKVn80zPGAkdL+FsmeJYuik0+HqmLpDy4jsgK7N
-UptUM1suk0w8ElZPp5S9yXC6bm1VZDpJWF830w==
+HX4Q7s9vnVjNM6SXztI0e6IyZgtsVMRUiSeztEnT+QDNVSuD1Tud2Zx6qAoeG71sY2q+aVoS1c9+
+RVX0DlFrSQiprjaMckpHExvjvw7NpspkdZV4D/e8YMiNXfBQRDu30cV8muoZX/Xg6oeuTdTuVduD
+SrQYCOgyvkqmTEpbmOJ7oCiAPrulXE+riyXAUKrM9NBApubXvUfh/Qr6u9YGlnZph/J1LliX78CD
+/GNic2zmdedcymH9+daXvZYolImvY9u7MZXLAlT9UvQm7qG9P0jOUMWAUFHbtmkEXpiN9ZBPxAXA
+rEb9GWwHhaOfS4IM5LnYjKIlwQ6EKeuAx15Csg==
 </SignatureValue>
 <KeyInfo>
 <X509Data>

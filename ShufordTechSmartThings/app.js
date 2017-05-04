@@ -4,6 +4,12 @@ var SwitchPageRan = false;
 var RoutinesPageRan = false;
 var setupPageRan = false;
 
+//brightness bar
+var brightnessBarWidget;
+var lastBrightness = -1;
+var setBright;
+var changeBright;
+
 //Polling interval in ms for token
 var pollingInt = 20000;
 
@@ -11,8 +17,11 @@ var pollingInt = 20000;
 var EncryptKey = 2092342;
 
 //Databases
+
+//real
 var Access_Token = Decrypt(localStorage.getItem("token_DB"));
 var Access_Url = Decrypt(localStorage.getItem("AccessUrl_DB"));
+
 var switches_DB = localStorage.getItem("switches_DB");
 var routines_DB = localStorage.getItem("routines_DB");
 
@@ -47,6 +56,9 @@ document.addEventListener("pageshow", function (e) {
 			SetupPage();
 			break;
 		case "processingPage":
+			break;
+		case "brightnessPage":
+			BrightnessPage();
 			break;
 		default:
 			alert("How did this even happen?? Restart the app.");
@@ -153,6 +165,7 @@ function getStatus(auth_id)
 			//let's just try this
 			alert("Congratulations! Setup is complete.");
 			tau.changePage("mainPage");
+			
 			//alert('Setup Complete! App will now close, please restart it!');
 			//tizen.application.getCurrentApplication().exit();
 		},
@@ -293,7 +306,7 @@ function RoutinePage_Buttons(){
 		//hide the button 
 		$(WhatRoutine).hide();
 		
-		// ??????????
+		//show switch is processing
 		$(WhatRoutine).parent().find('.ui-processing').show();
 		
 		//get the name of the URL-safe name of the routine
@@ -310,7 +323,7 @@ function RoutinePage_Buttons(){
 		    	data = JSON.stringify(data);
 		    	//bring back the button
 				$(WhatRoutine).show();
-				// ??????????
+				// change back to the button instead and hide the processing
 				$(WhatRoutine).parent().find('.ui-processing').hide();
 		    },
 		    error: function(e){
@@ -320,7 +333,7 @@ function RoutinePage_Buttons(){
 		    	//show the routine buton again
 				$(WhatRoutine).show();
 				
-				// ??????????
+				// hide the processing on button
 				$(WhatRoutine).parent().find('.ui-processing').hide();
 		    }
 		});
@@ -334,21 +347,17 @@ function MainPage(){
 	if(Access_Token){
 		//has the user been here before?
 		if(MainPageRan === false){
-			alert('MP:NR');
 			//he has now.
 			MainPageRan=true;
 		}else{	
-			alert('MP:R');
 			//hes been here
 		}
 	}else{
-		alert('MP:NAT');
 		//lets try again?
 		Access_Token = Decrypt(localStorage.getItem("token_DB"));
 		
 		if(!Access_Token)
 		{	
-			alert('MP:NATC');
 			//access token is not set. 
 			tau.changePage("setupPage");
 		}
@@ -379,11 +388,16 @@ function MainPage(){
 					//move to the routines page
 					tau.changePage("routinesPage");
 					break;
-				case "Clear Database":
+				case "Clean Database":
 					//clear the db - moved to it's own function
-					ClearDatabase();
+					CleanDatabase();
+					break;
+				case "Logout":
+					//logout - based on the old clear database
+					Logout();
 					break;
 				default:
+					alert("This feature is not yet implemented. Stay tuned.");
 					//do nothing
 			}
 			
@@ -437,13 +451,14 @@ function SwitchPageGetData(){
 				var id = element.id;
 				var label = element.label;
 				var value = element.value;
-				var type = element.type;					    
+				var type = element.type;	
+				var level = element.level;
 				var checked = "";
 				if(value == "on"){ checked = "checked"; }			        	
 				$('#Switches').append('\
 					<li class="li-has-checkbox">\
-						<div class="ui-marquee ui-marquee-gradient marquee">'+label+'</div>\
-						<input class="aswitch" deviceid="'+id+'" type="checkbox" ' + checked + '/>\
+						<div class="ui-marquee ui-marquee-gradient marquee switch-label">'+label+'</div>\
+						<input class="aswitch" deviceid="'+id+'" levelvalue="'+level+'" type="checkbox" ' + checked + '/>\
 						<div class="ui-processing" style="display:none;"></div>\
 					</li>\
 				');
@@ -506,6 +521,28 @@ function SwitchPageGetData(){
 
 function SwitchPage_Buttons()
 {	
+	$(".switch-label").click(function(){
+		//what switch
+		var parent = $(this).closest('li');
+		
+		var WhatSwitch = parent.find('.aswitch');
+		
+		//get url safe deviceid var
+		var DeviceID = encodeURIComponent(WhatSwitch.attr('deviceid'));
+		var DeviceLevel = encodeURIComponent(WhatSwitch.attr('levelvalue'));
+
+		if(DeviceLevel != null && DeviceLevel != "null")
+		{
+			$('#brightnessValue').html(DeviceLevel + "%");
+			$('#brightDeviceID').val(DeviceID);
+			$('#brightnessBar').val(DeviceLevel);
+			
+			tau.changePage('brightnessPage');
+		}else{
+			alert("This device does not support dimming.");
+		}
+	});
+	
 	//hanndle the click of the refresh switches button
 	$('#RefreshSwitchData').click(function(){
 		//clear the switch db and global var
@@ -532,7 +569,7 @@ function SwitchPage_Buttons()
 		$(WhatSwitch).parent().find('.ui-processing').show();
 		
 		//get url safe deviceid var
-		var DeviceID = encodeURIComponent($(this).attr('deviceid'));
+		var DeviceID = encodeURIComponent($(WhatSwitch).attr('deviceid'));
 		
 		//was the switch turning on or off?
 		if($(this).is(":checked")) {
@@ -588,6 +625,21 @@ function SwitchPage_Buttons()
 }
 //------------------------------------------------------------------------------------End Switch Page
 
+//------------------------------------------------------------------------------------Start Brightness Page
+
+function BrightnessPage ()
+{
+	var brightnessPage = document.getElementById("brightnessPage"),
+	brDispVal = document.getElementById("brightnessValue"),
+    brightnessBar = document.getElementById("brightnessBar"),
+    brightnessSwitchID = document.getElementById("brightDeviceID");
+	
+	
+}
+
+//------------------------------------------------------------------------------------End Switch Page
+
+
 //-----------------------------------------HANDLERS----------------------------------------------//
 
 //------------------------------------------------------------------------------------App's Back Button Handler
@@ -608,11 +660,82 @@ window.addEventListener( 'tizenhwkey', function( ev ){
 			case "setupPage":
 				tizen.application.getCurrentApplication().exit();
 				break;
+			case "brightnessPage":
+				tau.back();
+				break;
 			default:
 				tau.changePage("mainPage");
 		}
 	}
 });
+
+brightnessPage.addEventListener("pagehide", function()
+{
+	lastBrightness = -1;
+	var brightnessSet = document.getElementById('brightnessSet');
+	
+	brightnessSet.removeEventListener("click", setBright);
+	window.removeEventListener("rotarydetent", changeBright);
+	
+	/* Release object */
+	brightnessBarWidget.destroy();
+});
+
+brightnessPage.addEventListener("pageshow", function(){
+	/* Make Circle Progressbar object */
+	brightnessBarWidget = new tau.widget.CircleProgressBar(brightnessBar, {size: "full"});
+	
+	var brightnessSwitchID = document.getElementById("brightDeviceID"),
+		brightnessSet = document.getElementById('brightnessSet');
+	
+	lastBrightness = brightnessBarWidget.value();
+	
+	brightnessSet.addEventListener("click", setBright = function(){ setBrightness(brightnessBarWidget.value(), brightnessSwitchID.value); });
+	
+	window.addEventListener("rotarydetent", changeBright = function(ev){ rotaryBrightness(ev.detail.direction, brightnessBarWidget) });
+
+});
+
+function setBrightness(level, switchid)
+{
+	if(level != lastBrightness)
+	{
+		//set the brightness
+		$.get({
+		    url: Access_Url + "/switches/" + switchid + "/level/" + level,
+		    beforeSend: function(xhr) { 
+		      xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
+		    },
+		    success: function (data) {
+		    	//let the user know it's done
+		    	lastBrightness = level;
+		    	alert("Brightness set to " + level + "%!");
+		    },
+		    error: function(e){
+		    	//handle that error
+		    	errorHandling(e, "There was a problem, could not adjust brightness!");
+		    }
+		});
+	}
+}
+
+function rotaryBrightness(direction, widget) {
+	
+	//get the display element for brightness
+	var brDispVal = document.getElementById("brightnessValue");
+	
+	//if we are going clockwise, increase, else decrease
+	if(direction === "CW"){
+		if(widget.value() < 100)
+			widget.value(parseInt(widget.value())+2);
+	} else {
+		if(widget.value() > 0)
+			widget.value(parseInt(widget.value())-2);
+	}
+	
+	//update the display of brightness no matter what.
+	brDispVal.innerHTML = widget.value() + "%";
+}
 //------------------------------------------------------------------------------------App's Back Button Handler
 
 //-----------------------------------------HELPER FUNCTIONS-------------------------------------------//
@@ -655,26 +778,44 @@ function CheckInternet()
 }
 //------------------------------------------------------------------------------------End Check Internet Status
 
-//------------------------------------------------------------------------------------Start Clear Database
-function ClearDatabase()
+//------------------------------------------------------------------------------------Start Logout
+function Logout()
 {
-	//lets log we are clearing
-	console.log("Clearing Database");
+	//get confirmation
+	var ruSure = confirm("Are you sure you want to Logout? This will clear all data on the app and you will need to reverify with Smartthings.");
 	
-	//clear the entire DB and global vars
-	localStorage.clear();
-	Access_Token = null;
-	Access_Url = null;
+	//if they're sure.
+	if(ruSure)
+	{
+		//clear the entire DB and global vars
+		localStorage.clear();
+		Access_Token = null;
+		Access_Url = null;
+		switches_DB = null;
+		
+		//let the setup page run again
+		setupPageRan = false;
+		
+		//let the user know we just destroyed everything
+		alert("You have been logged out. All data is cleared.");
+		
+		//redirect to setup page
+		tau.changePage("setupPage");
+	}
+}
+//------------------------------------------------------------------------------------End Logout
+
+//------------------------------------------------------------------------------------Start Clear Database
+function CleanDatabase()
+{
+	//clear the device / routine / room data
+	routines_DB = null
 	switches_DB = null;
-	
-	//let the setup page run again
-	setupPageRan = false;
+	localStorage.setItem("switches_DB", null);
+	localStorage.setItem("routines_DB", null);
 	
 	//let the user know we just destroyed everything
-	alert("Database Cleared");
-	
-	//redirect to setup page
-	tau.changePage("setupPage");
+	alert("Database Cleaned.");
 }
 //------------------------------------------------------------------------------------End Clear Database
 
@@ -747,21 +888,6 @@ function Decrypt(str)
 //------------------------------------------------------------------------------------End Encryption Functions
 
 //------------------------------------------------------------------------------------Notes
-/*
- * might use for dimmers
-	window.addEventListener("rotarydetent", rotaryDetentCallback);
-	function rotaryDetentCallback(ev) {
-		var direction = ev.detail.direction,
-		    uiScroller = $('#main').find('.ui-scroller'),
-		    scrollPos = $(uiScroller).scrollTop();
-		
-		console.debug("onRotarydetent: " + direction);
-		
-		if(direction === "CW"){
-		    $(uiScroller).scrollTop(scrollPos + 100); // scroll down 100px
-		} else {
-		    $(uiScroller).scrollTop(scrollPos - 100); // scroll up 100px
-		}
-	}
-*/
+
+
 //------------------------------------------------------------------------------------Notes

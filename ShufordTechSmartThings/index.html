@@ -13,10 +13,13 @@
 		<div class="ui-page ui-page-active" id="mainPage">
 			<div class="ui-content content-padding">
 				<div id="selector" class="ui-selector">
-					<div class="ui-item switch-icon" data-title="Switches"></div>
-					<div class="ui-item switch-icon" data-title="Routines"></div>
-					<!-- <div class="ui-item settings-icon" data-title="Settings"></div>  -->
-					<div class="ui-item delete-icon" data-title="Clear Database"></div>
+					<div class="ui-item menu-item favorites-icon" data-title="Favorites"></div>
+					<div class="ui-item menu-item switch-icon" data-title="Switches"></div>					
+					<div class="ui-item menu-item routines-icon" data-title="Routines"></div>
+					<div class="ui-item menu-item locks-icon" data-title="Locks"></div>
+					<div class="ui-item menu-item settings-icon" data-title="Settings"></div>
+					<div class="ui-item menu-item cleandata-icon" data-title="Clean Database"></div>
+					<div class="ui-item menu-item logout-icon important" data-title="Logout"></div>
 				</div>
 			</div>
 			<header class="ui-header" style="display:none;">
@@ -38,13 +41,24 @@
 		<!-- Setup Page -->
 		<div class="ui-page" id="setupPage">
 			<header class="ui-header">
-				<h2 class="ui-title">Token:</h3>
+				<h2 class="ui-title">Token:</h2>
 			</header>
 			<div class="ui-content content-padding">
 				<div id="SmT">
 					 <span id="smarterauthtoken"></span>
-					<p>Visit https://goo.gl/PNjY6z on another device and follow the instructions</p>
+					<p>Visit goo.gl/PNjY6z on another device and follow the instructions</p>
 				</div>
+			</div>
+		</div>	
+		
+		<!-- Locks Page -->
+		<div class="ui-page" id="locksPage">
+			<header class="ui-header">
+				<h2 class="ui-title">Locks</h2>
+			</header>
+			<div class="ui-content content-padding">
+				<ul class="ui-listview" id="Locks">	
+				</ul>
 			</div>
 		</div>	
 	
@@ -58,6 +72,17 @@
 				</ul>
 			</div>
 		</div>	
+		
+		<!-- Brightness Page -->
+		<div class="ui-page" id="brightnessPage">
+			<header class="ui-header">
+				<h2 class="ui-title">Brightness</h2>
+			</header>
+			<div class="ui-content content-padding" id="brightnessValue"></div>
+			<input type="hidden" id="brightDeviceID" value="" />
+			<input type="button" class="ui-btn" value="SET" id="brightnessSet"/>
+			<progress class="ui-circle-progress" id="brightnessBar" max="100" value="0"></progress>
+		</div>
 		
 		<!-- Processing Page -->
 		<div class="ui-page" id="processingPage">

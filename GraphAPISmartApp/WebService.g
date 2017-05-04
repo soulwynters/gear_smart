@@ -16,7 +16,7 @@ definition(
     oauth: true
 )
 
-preferences {
+preferences(oauthPage: "pageOne") {
     page(name: "pageOne", title: "Gear Devices:", nextPage: "selectActions", uninstall: true) {
         section("Choose devices to control with watch") {
 			input "switches", "capability.switch", title: "Which Switches?", required: false, multiple: true

@@ -1,11 +1,15 @@
+//minimum smartapp version for functions to work correctly.
+var SMARTAPP_VERSION = "1.0.1";
+
 //Page Views
 var MainPageRan = false;
 var SwitchPageRan = false;
 var RoutinesPageRan = false;
 var setupPageRan = false;
 
-//brightness bar
+//brightness vars - these need to be global to be accessible in all required methods
 var brightnessBarWidget;
+var brightnessPage = document.getElementById("brightnessPage");
 var lastBrightness = -1;
 var setBright;
 var changeBright;
@@ -19,14 +23,21 @@ var EncryptKey = 2092342;
 //Databases
 
 //real
-var Access_Token = Decrypt(localStorage.getItem("token_DB"));
-var Access_Url = Decrypt(localStorage.getItem("AccessUrl_DB"));
+//var Access_Token = Decrypt(localStorage.getItem("token_DB"));
+//var Access_Url = Decrypt(localStorage.getItem("AccessUrl_DB"));
+
+//debug
+var Access_Token = "3c329a34-4bbd-4bc8-a3c1-f3bba8bd3a36";
+var Access_Url = "https://graph.api.smartthings.com:443/api/smartapps/installations/3942e6c2-716a-477e-8dfb-d2c4a295422b";
+
 
 var switches_DB = localStorage.getItem("switches_DB");
 var routines_DB = localStorage.getItem("routines_DB");
+var locks_DB = localStorage.getItem("locks_DB");
 
 //TAU UI Helpers (to create/destroy)
 var SwitchList_UI = null;
+var LockList_UI = null;
 var RoutineList_UI = null;
 
 //------------------------------------------------------------------------------------Start On Page Changes
@@ -55,6 +66,9 @@ document.addEventListener("pageshow", function (e) {
 		case "setupPage":
 			SetupPage();
 			break;
+		case "locksPage":
+			LockPage();
+			break;
 		case "processingPage":
 			break;
 		case "brightnessPage":
@@ -75,10 +89,29 @@ document.addEventListener( "pagebeforehide", function(e) {
 	switch(page)
 	{
 		case "routinesPage":
-			RoutineList_UI.destroy();
+			if(RoutineList_UI) 
+				{RoutineList_UI.destroy();}
 			break;
 		case "switchesPage":
-			SwitchList_UI.destroy();
+			if(SwitchList_UI) 
+				{SwitchList_UI.destroy();}
+			break;
+		case "locksPage":
+			if(LockList_UI) 
+				{LockList_UI.destroy();}
+			break;
+		case "brightnessPage":
+			//reset last brightness
+			lastBrightness = -1;
+			
+			var brightnessSet = document.getElementById('brightnessSet');
+
+			//remove event listeners for brightness
+			brightnessSet.removeEventListener("click", setBright);
+			window.removeEventListener("rotarydetent", changeBright);
+			
+			/* Release object */
+			brightnessBarWidget.destroy();
 			break;
 		default:
 			//do nothing
@@ -134,50 +167,317 @@ function SetupPage(){
 }
 //------------------------------------------------------------------------------------End Setup Page
 
-//------------------------------------------------------------------------------------Poll for Status of Auth
-function getStatus(auth_id)
-{
-	//do we have internet???
-	CheckInternet();
+//------------------------------------------------------------------------------------Start Main Page
+function MainPage(){
+	//is the access token set?
+	if(Access_Token){
+		//do we have the write smartapp version?
+		CheckSmartAppVersion();
+		//has the user been here before?
+		if(MainPageRan === false){
+			//he has now.
+			MainPageRan=true;
+		}else{	
+			//hes been here
+		}
+	}else{
+		//lets try again?
+		Access_Token = Decrypt(localStorage.getItem("token_DB"));
+		
+		if(!Access_Token){	
+			//access token is not set. 
+			tau.changePage("setupPage");
+		}else{
+			//do we have the write smartapp version?
+			CheckSmartAppVersion();
+		}
+	}
+}
+(function(tau) {
+	var mPage = document.getElementById("mainPage"),
+		selector = document.getElementById("selector"),
+		selectorComponent,
+		clickBound;
 	
-	//lets poll for status on our authentication
-	$.ajax({
-		url: "https://timothyfenton.com/stconnector/api/v1/authentries/getstatus",
-		type: "POST",
-		contentType: "application/json",
-		data: JSON.stringify({AuthID:auth_id}),
-		headers: {
-		    "Authorization": "Token 98b7d003-4701-40fb-8295-b2dded696f26"
-		  },
-		retryLimit: 30,
-		success: function(json){
-			//set the token and accessurl in the DB
-			localStorage.setItem("token_DB", Encrypt(json.AuthToken));
-			localStorage.setItem("AccessUrl_DB", Encrypt(json.AuthURL));
+	//click event handler for the selector
+	function onClick(event) {
+		//console.log(event);		
+		var target = event.target;
+		if (target.classList.contains("ui-selector-indicator")) {
 			
-			//set the global variables to the authtoken  and url
-			Access_Token = json.AuthToken;
-			Access_Url = json.AuthURL;
-			
-			//we dont need the screen on all the time anymore, let's release the screen resource
-			tizen.power.release("SCREEN");
-			
-			//let's just try this
-			alert("Congratulations! Setup is complete.");
-			tau.changePage("mainPage");
-			
-			//alert('Setup Complete! App will now close, please restart it!');
-			//tizen.application.getCurrentApplication().exit();
-		},
-		error: function(xhr, textStatus, errorThrown)
-		{
-			//if we reported a 400 this means auth is not ready yet, try again in 20 seconds
-			if(xhr.status == '400'){
-			    setTimeout( function(){ getStatus(auth_id); }, pollingInt );
+			var ItemClicked = event.srcElement.textContent;
+
+			//react to the item clicked -- changed to switch for readability
+			switch(ItemClicked)
+			{
+				case "Switches":
+					//move to the switches page
+					tau.changePage("switchesPage");
+					break;
+				case "Routines":
+					//move to the routines page
+					tau.changePage("routinesPage");
+					break;
+				case "Locks":
+					//move to the locks page
+					tau.changePage("locksPage");
+					break;					
+				case "Clean Database":
+					//clear the db - moved to it's own function
+					CleanDatabase();
+					break;
+				case "Logout":
+					//logout - based on the old clear database
+					Logout();
+					break;
+				default:
+					alert("This feature is not yet implemented. Stay tuned.");
+					//do nothing
 			}
+			
+			return;
+		}
+	}
+	//pagebeforeshow event handler - add the click listener
+	mPage.addEventListener("pagebeforeshow", function() {
+		clickBound = onClick.bind(null);
+		selectorComponent = tau.widget.Selector(selector);
+		selector.addEventListener("click", clickBound, false);
+	});
+	//pagebeforehide event handler - get rid of the click listener
+	mPage.addEventListener("pagebeforehide", function() {
+		selector.removeEventListener("click", clickBound, false);
+		selectorComponent.destroy();
+	});
+}(window.tau));
+//------------------------------------------------------------------------------------End Main Page
+
+//------------------------------------------------------------------------------------Start Switch Page
+function SwitchPage(){	
+	//have we run the switch page yet?
+	if(SwitchPageRan === true){
+		$.when(SwitchPageGetData()).done(function() {
+			SwitchPage_Buttons();
+		});
+	}else{
+		//This is the first time the user has looked at this page!
+		SwitchPageRan = true;
+		$.when(SwitchPageGetData()).done(function() {
+			SwitchPage_Buttons();						
+		});
+	}
+}
+
+function SwitchPageGetData(){
+	
+	//Clear Switches
+	$('#Switches').html('');
+	
+	//We have switch data stored!
+	if(switches_DB !== null){ 
+		try {
+			//get the switches as a json object
+			var obj = jQuery.parseJSON(switches_DB);
+			
+			//build the list with the existing data we have
+			$.each(obj, function(index, element) {
+				var id = element.id;
+				var label = element.label;
+				var value = element.value;
+				var type = element.type;	
+				var level = element.level;
+				var checked = "";
+				if(value == "on"){ checked = "checked"; }			        	
+				$('#Switches').append('\
+					<li class="li-has-checkbox">\
+						<div class="ui-marquee ui-marquee-gradient marquee switch-label">'+label+'</div>\
+						<input class="aswitch" deviceid="'+id+'" levelvalue="'+level+'" type="checkbox" ' + checked + '/>\
+						<div class="ui-processing" style="display:none;"></div>\
+					</li>\
+				');
+			});
+			$('#Switches').append('\
+				<li class="">\
+					<div id="RefreshSwitchData" class="ui-marquee ui-marquee-gradient marquee">Refresh Data</div>\
+				</li>\
+			');
+
+			//fancy GUI stuff
+			var switcherr = document.getElementById("Switches");
+			SwitchList_UI = tau.helper.SnapListMarqueeStyle.create(switcherr, {
+				marqueeDelay: 0,
+				marqueeStyle: "endToEnd"
+			});
+			
+		} catch (e) {
+			//some error happened, invalid json stored?
+			alert("There was an error! The database may be corrupted, try clearning it.");
+			console.log(e);
+			return;
+		}
+	}
+	else
+	{ 
+		//We couldn't find the switches database data, so lets build it.
+		
+		//set the processing message and redirect to processing page
+		$('#ProcessingMsg').html('Retrieving Switches From SmartThings');
+		tau.changePage("processingPage");
+		
+		//get those switches
+		$.get({
+		    url: Access_Url + "/switches",
+		    beforeSend: function(xhr) { 
+		      xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
+		    },
+		    success: function (data) {
+		    	//get the response as a string and send to the database
+		    	data = JSON.stringify(data);
+				localStorage.setItem("switches_DB", data);
+				
+				//lets get the json version stored in our global switches var
+				switches_DB = data;
+				
+				//we can go to the switches page now
+		        tau.changePage("switchesPage");
+		    },
+		    error: function(e){
+		    	//handle the errors
+		    	errorHandling(e, "There was an error getting your Switches from Smartthings.");
+				
+		    	//go back to main page
+		    	tau.changePage("mainPage");
+		    }
+		});
+	}
+}
+
+function SwitchPage_Buttons()
+{	
+	$(".switch-label").click(function(){
+		//what switch
+		var parent = $(this).closest('li');
+		
+		var WhatSwitch = parent.find('.aswitch');
+		
+		//get url safe deviceid var
+		var DeviceID = encodeURIComponent(WhatSwitch.attr('deviceid'));
+		var DeviceLevel = encodeURIComponent(WhatSwitch.attr('levelvalue'));
+
+		if(DeviceLevel != null && DeviceLevel != "null")
+		{
+			$('#brightnessValue').html(DeviceLevel + "%");
+			$('#brightDeviceID').val(DeviceID);
+			$('#brightnessBar').val(DeviceLevel);
+			
+			tau.changePage('brightnessPage');
+		}else{
+			alert("This device does not support dimming.");
 		}
 	});
+	
+	//hanndle the click of the refresh switches button
+	$('#RefreshSwitchData').click(function(){
+		//clear the switch db and global var
+		localStorage.setItem("switches_DB", null);
+		switches_DB = null;
+		$('#Switches').html('');
+		
+		//set the processing message and show processing page
+		$('#ProcessingMsg').html('Retrieving Switches From SmartThings');
+		tau.changePage("processingPage");
+		
+		//wait 2 seconds and change to switches page
+		setTimeout(function(){ tau.changePage("switchesPage"); }, 2000); //:)
+	});
+
+	//user pressed a switch
+	$(".aswitch").change(function(){
+		
+		//set the switch
+		var WhatSwitch = this;
+		
+		//hide the switch, show processing
+		$(WhatSwitch).hide();
+		$(WhatSwitch).parent().find('.ui-processing').show();
+		
+		//get url safe deviceid var
+		var DeviceID = encodeURIComponent($(WhatSwitch).attr('deviceid'));
+		
+		//was the switch turning on or off?
+		if($(this).is(":checked")) {
+			//turning on
+			$.get({
+			    url: Access_Url + "/switches/" + DeviceID + "/on",
+			    beforeSend: function(xhr) { 
+			      xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
+			    },
+			    success: function (data) {
+			    	//update switch database
+			    	updateDeviceDB(DeviceID, data.status, "switches_DB");
+			    	
+			    	//show the switch again
+					$(WhatSwitch).show();
+					$(WhatSwitch).parent().find('.ui-processing').hide();
+			    },
+			    error: function(e){
+			    	//handle that error
+			    	errorHandling(e, "There was a problem, could not turn on the device!");
+			    	
+			    	//show the switch again, get rid of the processing
+					$(WhatSwitch).show();
+					$(WhatSwitch).parent().find('.ui-processing').hide();
+			    }
+			});
+		}else{
+			//turn it off
+			$.get({
+			    url: Access_Url + "/switches/" + DeviceID + "/off",
+			    beforeSend: function(xhr) { 
+			      xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
+			    },
+			    success: function (data) {
+			    	//update switch database
+			    	updateDeviceDB(DeviceID, data.status, "switches_DB");
+			    	
+			    	//show switch, hide processing
+					$(WhatSwitch).show();
+					$(WhatSwitch).parent().find('.ui-processing').hide();
+			    },
+			    error: function(e){
+			    	//handle that error
+			    	errorHandling(e, "There was a problem, could not turn off the device!");
+			    	
+			    	//show the switch, hide the processing
+					$(WhatSwitch).show();
+					$(WhatSwitch).parent().find('.ui-processing').hide();
+			    }
+			});
+		}
+	});	
 }
+//------------------------------------------------------------------------------------End Switch Page
+
+//------------------------------------------------------------------------------------Start Brightness Page
+
+function BrightnessPage ()
+{
+	var brightnessBar = document.getElementById("brightnessBar");
+	/* Make Circle Progressbar object */
+	brightnessBarWidget = new tau.widget.CircleProgressBar(brightnessBar, {size: "full"});
+	
+	var brightnessSwitchID = document.getElementById("brightDeviceID"),
+		brightnessSet = document.getElementById('brightnessSet');
+	
+	lastBrightness = brightnessBarWidget.value();
+	
+	brightnessSet.addEventListener("click", setBright = function(){ setBrightness(brightnessBarWidget.value(), brightnessSwitchID.value); });
+	
+	window.addEventListener("rotarydetent", changeBright = function(ev){ rotaryBrightness(ev.detail.direction, brightnessBarWidget) });
+
+}
+
+//------------------------------------------------------------------------------------End Brightness Page
 
 //------------------------------------------------------------------------------------Start Routines Page
 function RoutinesPage(){
@@ -341,110 +641,27 @@ function RoutinePage_Buttons(){
 }
 //------------------------------------------------------------------------------------End Routines Page
 
-//------------------------------------------------------------------------------------Start Main Page
-function MainPage(){
-	//is the access token set?
-	if(Access_Token){
-		//has the user been here before?
-		if(MainPageRan === false){
-			//he has now.
-			MainPageRan=true;
-		}else{	
-			//hes been here
-		}
-	}else{
-		//lets try again?
-		Access_Token = Decrypt(localStorage.getItem("token_DB"));
-		
-		if(!Access_Token)
-		{	
-			//access token is not set. 
-			tau.changePage("setupPage");
-		}
-	}
-}
-(function(tau) {
-	var mPage = document.getElementById("mainPage"),
-		selector = document.getElementById("selector"),
-		selectorComponent,
-		clickBound;
-	
-	//click event handler for the selector
-	function onClick(event) {
-		//console.log(event);		
-		var target = event.target;
-		if (target.classList.contains("ui-selector-indicator")) {
-			
-			var ItemClicked = event.srcElement.textContent;
 
-			//react to the item clicked -- changed to switch for readability
-			switch(ItemClicked)
-			{
-				case "Switches":
-					//move to the switches page
-					tau.changePage("switchesPage");
-					break;
-				case "Routines":
-					//move to the routines page
-					tau.changePage("routinesPage");
-					break;
-				case "Clean Database":
-					//clear the db - moved to it's own function
-					CleanDatabase();
-					break;
-				case "Logout":
-					//logout - based on the old clear database
-					Logout();
-					break;
-				default:
-					alert("This feature is not yet implemented. Stay tuned.");
-					//do nothing
-			}
-			
-			return;
-		}
-	}
-	//pagebeforeshow event handler - add the click listener
-	mPage.addEventListener("pagebeforeshow", function() {
-		clickBound = onClick.bind(null);
-		selectorComponent = tau.widget.Selector(selector);
-		selector.addEventListener("click", clickBound, false);
-	});
-	//pagebeforehide event handler - get rid of the click listener
-	mPage.addEventListener("pagebeforehide", function() {
-		selector.removeEventListener("click", clickBound, false);
-		selectorComponent.destroy();
-	});
-}(window.tau));
-//------------------------------------------------------------------------------------End Main Page
+
+
 
 //------------------------------------------------------------------------------------Start Switch Page
-function SwitchPage(){	
-	
-	//have we run the switch page yet?
-	if(SwitchPageRan === true){
-		$.when(SwitchPageGetData()).done(function() {
-			SwitchPage_Buttons();
-		});
-	}else{
-		//This is the first time the user has looked at this page!
-		SwitchPageRan = true;
-		$.when(SwitchPageGetData()).done(function() {
-			SwitchPage_Buttons();						
-		});
-	}
+function LockPage(){	
+	$.when(LockPageGetData()).done(function() {
+		LockPage_Buttons();						
+	});
 }
 
-function SwitchPageGetData(){
+function LockPageGetData(){
 	
 	//Clear Switches
-	$('#Switches').html('');
+	$('#Locks').html('');
 	
 	//We have switch data stored!
-	if(switches_DB !== null){ 
+	if(locks_DB !== null){ 
 		try {
 			//get the switches as a json object
-			var obj = jQuery.parseJSON(switches_DB);
+			var obj = jQuery.parseJSON(locks_DB);
 			
 			//build the list with the existing data we have
 			$.each(obj, function(index, element) {
@@ -452,26 +669,25 @@ function SwitchPageGetData(){
 				var label = element.label;
 				var value = element.value;
 				var type = element.type;	
-				var level = element.level;
 				var checked = "";
-				if(value == "on"){ checked = "checked"; }			        	
-				$('#Switches').append('\
+				if(value == "locked"){ checked = "checked"; }			        	
+				$('#Locks').append('\
 					<li class="li-has-checkbox">\
 						<div class="ui-marquee ui-marquee-gradient marquee switch-label">'+label+'</div>\
-						<input class="aswitch" deviceid="'+id+'" levelvalue="'+level+'" type="checkbox" ' + checked + '/>\
+						<input class="alock" deviceid="'+id+'" type="checkbox" ' + checked + '/>\
 						<div class="ui-processing" style="display:none;"></div>\
 					</li>\
 				');
 			});
-			$('#Switches').append('\
+			$('#Locks').append('\
 				<li class="">\
-					<div id="RefreshSwitchData" class="ui-marquee ui-marquee-gradient marquee">Refresh Data</div>\
+					<div id="RefreshLockData" class="ui-marquee ui-marquee-gradient marquee">Refresh Data</div>\
 				</li>\
 			');
 
 			//fancy GUI stuff
-			var switcherr = document.getElementById("Switches");
-			SwitchList_UI = tau.helper.SnapListMarqueeStyle.create(switcherr, {
+			var lockerr = document.getElementById("Locks");
+			LockList_UI = tau.helper.SnapListMarqueeStyle.create(lockerr, {
 				marqueeDelay: 0,
 				marqueeStyle: "endToEnd"
 			});
@@ -488,156 +704,127 @@ function SwitchPageGetData(){
 		//We couldn't find the switches database data, so lets build it.
 		
 		//set the processing message and redirect to processing page
-		$('#ProcessingMsg').html('Retrieving Switches From SmartThings');
+		$('#ProcessingMsg').html('Retrieving Locks From SmartThings');
 		tau.changePage("processingPage");
 		
 		//get those switches
 		$.get({
-		    url: Access_Url + "/switches",
+		    url: Access_Url + "/locks",
 		    beforeSend: function(xhr) { 
 		      xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
 		    },
 		    success: function (data) {
-		    	//get the response as a string and send to the database
-		    	data = JSON.stringify(data);
-				localStorage.setItem("switches_DB", data);
-				
-				//lets get the json version stored in our global switches var
-				switches_DB = data;
-				
-				//we can go to the switches page now
-		        tau.changePage("switchesPage");
+		    	if(Object.keys(data).length !== 0)
+		    	{
+			    	//get the response as a string and send to the database
+			    	data = JSON.stringify(data);
+					localStorage.setItem("locks_DB", data);
+					//lets get the json version stored in our global switches var
+					locks_DB = data;
+					
+					//we can go to the locks page now
+			        tau.changePage("locksPage");
+		    	}else{
+		    		//no locks found
+		    		alert("No locks found, make sure you have allowed your locks in the SmartApp.");
+		    		//go back to main page
+			    	tau.changePage("mainPage");
+		    	}
 		    },
 		    error: function(e){
 		    	//handle the errors
 		    	errorHandling(e, "There was an error getting your Switches from Smartthings.");
 				
-		    	//go back to switches page
-		    	tau.changePage("switchesPage");
+		    	//go back to main page
+		    	tau.changePage("mainPage");
 		    }
 		});
 	}
 }
 
-function SwitchPage_Buttons()
+function LockPage_Buttons()
 {	
-	$(".switch-label").click(function(){
-		//what switch
-		var parent = $(this).closest('li');
-		
-		var WhatSwitch = parent.find('.aswitch');
-		
-		//get url safe deviceid var
-		var DeviceID = encodeURIComponent(WhatSwitch.attr('deviceid'));
-		var DeviceLevel = encodeURIComponent(WhatSwitch.attr('levelvalue'));
-
-		if(DeviceLevel != null && DeviceLevel != "null")
-		{
-			$('#brightnessValue').html(DeviceLevel + "%");
-			$('#brightDeviceID').val(DeviceID);
-			$('#brightnessBar').val(DeviceLevel);
-			
-			tau.changePage('brightnessPage');
-		}else{
-			alert("This device does not support dimming.");
-		}
-	});
-	
 	//hanndle the click of the refresh switches button
-	$('#RefreshSwitchData').click(function(){
+	$('#RefreshLockData').click(function(){
 		//clear the switch db and global var
-		localStorage.setItem("switches_DB", null);
-		switches_DB = null;
-		$('#Switches').html('');
+		localStorage.setItem("locks_DB", null);
+		locks_DB = null;
+		$('#Locks').html('');
 		
 		//set the processing message and show processing page
-		$('#ProcessingMsg').html('Retrieving Switches From SmartThings');
+		$('#ProcessingMsg').html('Retrieving Locks From SmartThings');
 		tau.changePage("processingPage");
 		
 		//wait 2 seconds and change to switches page
-		setTimeout(function(){ tau.changePage("switchesPage"); }, 2000); //:)
+		setTimeout(function(){ tau.changePage("locksPage"); }, 2000); //:)
 	});
 
 	//user pressed a switch
-	$(".aswitch").change(function(){
+	$(".alock").change(function(){
 		
 		//set the switch
-		var WhatSwitch = this;
+		var WhatLock = this;
 		
 		//hide the switch, show processing
-		$(WhatSwitch).hide();
-		$(WhatSwitch).parent().find('.ui-processing').show();
+		$(WhatLock).hide();
+		$(WhatLock).parent().find('.ui-processing').show();
 		
 		//get url safe deviceid var
-		var DeviceID = encodeURIComponent($(WhatSwitch).attr('deviceid'));
+		var DeviceID = encodeURIComponent($(WhatLock).attr('deviceid'));
 		
 		//was the switch turning on or off?
 		if($(this).is(":checked")) {
-			//turning on
+			//lock  the door
 			$.get({
-			    url: Access_Url + "/switches/" + DeviceID + "/on",
+			    url: Access_Url + "/locks/" + DeviceID + "/lock",
 			    beforeSend: function(xhr) { 
 			      xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
 			    },
 			    success: function (data) {
-			    	//getthe json data returned for the switch - and do nothing with it??
-			    	data = JSON.stringify(data);
+			    	//update lock database
+			    	updateDeviceDB(DeviceID, data.status, "locks_DB");
 			    	
 			    	//show the switch again
-					$(WhatSwitch).show();
-					$(WhatSwitch).parent().find('.ui-processing').hide();
+					$(WhatLock).show();
+					$(WhatLock).parent().find('.ui-processing').hide();
 			    },
 			    error: function(e){
 			    	//handle that error
-			    	errorHandling(e, "There was a problem, could not turn on the device!");
+			    	errorHandling(e, "There was a problem, could not lock the device!");
 			    	
 			    	//show the switch again, get rid of the processing
-					$(WhatSwitch).show();
-					$(WhatSwitch).parent().find('.ui-processing').hide();
+					$(WhatLock).show();
+					$(WhatLock).parent().find('.ui-processing').hide();
 			    }
 			});
 		}else{
 			//turn it off
 			$.get({
-			    url: Access_Url + "/switches/" + DeviceID + "/off",
+			    url: Access_Url + "/locks/" + DeviceID + "/unlock",
 			    beforeSend: function(xhr) { 
 			      xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
 			    },
 			    success: function (data) {
-			    	//get the data in json format - do nothing with it??
-			    	data = JSON.stringify(data);
+			    	//update lock database
+			    	updateDeviceDB(DeviceID, data.status, "locks_DB");
 			    	
 			    	//show switch, hide processing
-					$(WhatSwitch).show();
-					$(WhatSwitch).parent().find('.ui-processing').hide();
+					$(WhatLock).show();
+					$(WhatLock).parent().find('.ui-processing').hide();
 			    },
 			    error: function(e){
 			    	//handle that error
-			    	errorHandling(e, "There was a problem, could not turn off the device!");
+			    	errorHandling(e, "There was a problem, could not unlock the device!");
 			    	
 			    	//show the switch, hide the processing
-					$(WhatSwitch).show();
-					$(WhatSwitch).parent().find('.ui-processing').hide();
+					$(WhatLock).show();
+					$(WhatLock).parent().find('.ui-processing').hide();
 			    }
 			});
 		}
 	});	
 }
-//------------------------------------------------------------------------------------End Switch Page
-
-//------------------------------------------------------------------------------------Start Brightness Page
-
-function BrightnessPage ()
-{
-	var brightnessPage = document.getElementById("brightnessPage"),
-	brDispVal = document.getElementById("brightnessValue"),
-    brightnessBar = document.getElementById("brightnessBar"),
-    brightnessSwitchID = document.getElementById("brightDeviceID");
-	
-	
-}
-
-//------------------------------------------------------------------------------------End Switch Page
+//------------------------------------------------------------------------------------End Lock Page
 
 
 //-----------------------------------------HANDLERS----------------------------------------------//
@@ -661,39 +848,12 @@ window.addEventListener( 'tizenhwkey', function( ev ){
 				tizen.application.getCurrentApplication().exit();
 				break;
 			case "brightnessPage":
-				tau.back();
+				tau.changePage("switchesPage");
 				break;
 			default:
 				tau.changePage("mainPage");
 		}
 	}
-});
-
-brightnessPage.addEventListener("pagehide", function()
-{
-	lastBrightness = -1;
-	var brightnessSet = document.getElementById('brightnessSet');
-	
-	brightnessSet.removeEventListener("click", setBright);
-	window.removeEventListener("rotarydetent", changeBright);
-	
-	/* Release object */
-	brightnessBarWidget.destroy();
-});
-
-brightnessPage.addEventListener("pageshow", function(){
-	/* Make Circle Progressbar object */
-	brightnessBarWidget = new tau.widget.CircleProgressBar(brightnessBar, {size: "full"});
-	
-	var brightnessSwitchID = document.getElementById("brightDeviceID"),
-		brightnessSet = document.getElementById('brightnessSet');
-	
-	lastBrightness = brightnessBarWidget.value();
-	
-	brightnessSet.addEventListener("click", setBright = function(){ setBrightness(brightnessBarWidget.value(), brightnessSwitchID.value); });
-	
-	window.addEventListener("rotarydetent", changeBright = function(ev){ rotaryBrightness(ev.detail.direction, brightnessBarWidget) });
-
 });
 
 function setBrightness(level, switchid)
@@ -709,6 +869,7 @@ function setBrightness(level, switchid)
 		    success: function (data) {
 		    	//let the user know it's done
 		    	lastBrightness = level;
+		    	updateBrightnessDB(switchid, level, "switches_DB")
 		    	alert("Brightness set to " + level + "%!");
 		    },
 		    error: function(e){
@@ -739,6 +900,111 @@ function rotaryBrightness(direction, widget) {
 //------------------------------------------------------------------------------------App's Back Button Handler
 
 //-----------------------------------------HELPER FUNCTIONS-------------------------------------------//
+
+//------------------------------------------------------------------------------------Poll for Status of Auth
+function getStatus(auth_id)
+{
+	//do we have internet???
+	CheckInternet();
+	
+	//lets poll for status on our authentication
+	$.ajax({
+		url: "https://timothyfenton.com/stconnector/api/v1/authentries/getstatus",
+		type: "POST",
+		contentType: "application/json",
+		data: JSON.stringify({AuthID:auth_id}),
+		headers: {
+		    "Authorization": "Token 98b7d003-4701-40fb-8295-b2dded696f26"
+		  },
+		retryLimit: 30,
+		success: function(json){
+			//set the token and accessurl in the DB
+			localStorage.setItem("token_DB", Encrypt(json.AuthToken));
+			localStorage.setItem("AccessUrl_DB", Encrypt(json.AuthURL));
+			
+			//set the global variables to the authtoken  and url
+			Access_Token = json.AuthToken;
+			Access_Url = json.AuthURL;
+			
+			//we dont need the screen on all the time anymore, let's release the screen resource
+			tizen.power.release("SCREEN");
+			
+			//let's just try this
+			alert("Congratulations! Setup is complete.");
+			tau.changePage("mainPage");
+			
+			//alert('Setup Complete! App will now close, please restart it!');
+			//tizen.application.getCurrentApplication().exit();
+		},
+		error: function(xhr, textStatus, errorThrown)
+		{
+			//if we reported a 400 this means auth is not ready yet, try again in 20 seconds
+			if(xhr.status == '400'){
+			    setTimeout( function(){ getStatus(auth_id); }, pollingInt );
+			}
+		}
+	});
+}
+
+//------------------------------------------------------------------------------------End Poll for Status of Auth
+
+
+//------------------------------------------------------------------------------------Start Update SwitchDB
+
+function updateDeviceDB(switchId, status, dbToUpdate)
+{
+	//get json object version of our database - we can access a global object by string by calling window["global_object"]
+	var jsonDevices = JSON.parse(window[dbToUpdate]);
+	
+	//loop through the devices inside
+	for(var i = 0; i < jsonDevices.length; i++)
+	{
+		//find the device to update in the db
+		if(jsonDevices[i].id == switchId)
+		{
+			//set the status to the returned status from the smartapp
+			jsonDevices[i].value = status;
+			
+			//update the global db var as well as the local storage so we have the most up to date info
+			window[dbToUpdate] = JSON.stringify(jsonDevices);
+			localStorage.setItem(dbToUpdate, window[dbToUpdate]);
+			
+			//break free so we don't keep looping through devices further than we have to
+			break;
+		}
+	}
+}
+
+//------------------------------------------------------------------------------------Start Update SwitchDB
+
+//------------------------------------------------------------------------------------Start Update DB Brightness
+
+function updateBrightnessDB(switchId, level, dbToUpdate)
+{
+	//get json object version of our database - we can access a global object by string by calling window["global_object"]
+	var jsonDevices = JSON.parse(window[dbToUpdate]);
+	
+	//loop through the devices inside
+	for(var i = 0; i < jsonDevices.length; i++)
+	{
+		//find the device to update in the db
+		if(jsonDevices[i].id == switchId)
+		{
+			//set the status to the returned status from the smartapp
+			jsonDevices[i].level = level;
+			
+			//update the global db var as well as the local storage so we have the most up to date info
+			window[dbToUpdate] = JSON.stringify(jsonDevices);
+			localStorage.setItem(dbToUpdate, window[dbToUpdate]);
+			
+			//break free so we don't keep looping through devices further than we have to
+			break;
+		}
+	}
+}
+
+//------------------------------------------------------------------------------------Start Update Db Brightness
+
 
 //------------------------------------------------------------------------------------Start Error Handling
 function errorHandling(e, errorMsg)
@@ -778,6 +1044,40 @@ function CheckInternet()
 }
 //------------------------------------------------------------------------------------End Check Internet Status
 
+//------------------------------------------------------------------------------------Start Check SmartApp Version
+
+//lock  the door
+function CheckSmartAppVersion()
+{
+	$.get({
+	  url: Access_Url + "/version",
+	  beforeSend: function(xhr) { 
+	    xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
+	  },
+	  success: function (data) {
+	  	//update lock database
+	  	if(data.version != SMARTAPP_VERSION)
+  		{
+	  		//SmartApp needs update
+	  		alert("Your SmartApp needs to be updated. Please go to goo.gl/ZAKGII to get the latest SmartApp code");
+	  		
+	  		//leave
+	  		tizen.application.getCurrentApplication().exit();
+  		}
+	  },
+	  error: function(e){
+	  	//handle that error
+	  	errorHandling(e, "Your SmartApp needs to be updated. Please go to goo.gl/ZAKGII to get the latest SmartApp code");
+	  	
+	  	//leave
+	  	tizen.application.getCurrentApplication().exit();
+	  }
+	});
+}
+
+//------------------------------------------------------------------------------------End Check SmartApp Version
+
+
 //------------------------------------------------------------------------------------Start Logout
 function Logout()
 {
@@ -809,10 +1109,20 @@ function Logout()
 function CleanDatabase()
 {
 	//clear the device / routine / room data
+	if(RoutineList_UI) 
+		RoutineList_UI.destroy();
+	if(SwitchList_UI) 
+		SwitchList_UI.destroy();
+	if(LockList_UI) 
+		LockList_UI.destroy();
+	
 	routines_DB = null
 	switches_DB = null;
+	locks_DB = null;
+	
 	localStorage.setItem("switches_DB", null);
 	localStorage.setItem("routines_DB", null);
+	localStorage.setItem("locks_DB", null);
 	
 	//let the user know we just destroyed everything
 	alert("Database Cleaned.");

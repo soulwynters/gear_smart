@@ -17,25 +17,14 @@ definition(
 )
 
 preferences(oauthPage: "pageOne") {
-    page(name: "pageOne", title: "Gear Devices:", nextPage: "selectActions", uninstall: true) {
+    page(name: "pageOne", title: "Gear Devices:", nextPage: "selectActions", install: false, uninstall: true) {
         section("Choose devices to control with watch") {
-			input "switches", "capability.switch", title: "Which Switches?", required: false, multiple: true
-        	//input "locks", "capability.lock", title: "Which Locks?", required: false, multiple: true     
+		input "switches", "capability.switch", title: "Which Switches?",  required: false, multiple: true
+        	input "locks", "capability.lock", title: "Which Locks?", required: false, multiple: true     
         	//input "lights", "capability.light", title: "Which Lights?", required: false, multiple: true     
         	//input "levels", "capability.switchLevel", title: "Which level switches?", required: false, multiple: true     
         	//input "motion", "capability.motionSensor", title: "Which Motion Sensors?", required: false, multiple: true     
         }
-        /*
-        section("Visit Us Online") {
-        	href(
-        		title: "Shuford Technology LLC",
-        		required: false,
-        		style: "external",
-        		url: "http://ShufordTech.com/",
-        		description: "Visit Shuford Technology LLC Online!"
-        	)
-    	}
-        */
     }
     page(name: "selectActions")
 }
@@ -77,6 +66,11 @@ mappings {
 			GET: "updateSwitch"
 		]
 	}
+    path("/switches/:id/:command/:value") {
+		action: [
+			GET: "setSwitchLevel"
+		]
+	}
     
     //Locks
 	path("/locks") {
@@ -107,17 +101,33 @@ mappings {
         ]
 	}
     
+    path("/version") {
+    	action: [
+        	GET: "smartAppVersion"
+        ]
+    }
+}
+
+//version
+def smartAppVersion(){
+	[version: "1.0.1"]
 }
 
 //switches
 def listSwitches() {
 	switches.collect{device(it,"switch")}
 }
+
 def showSwitch() {
 	show(switches, "switch")
 }
-void updateSwitch() {
+
+def updateSwitch() {
 	update(switches)
+}
+
+def setSwitchLevel(){
+    setlevel(switches)
 }
 
 //Locks
@@ -127,13 +137,12 @@ def listLocks() {
 def showLock() {
 	show(locks, "lock")
 }
-void updateLock() {
+def updateLock() {
 	update(locks)
 }
 
 //Routines
 def listRoutines() {
-	log.debug location.helloHome
 	def actions = location.helloHome?.getPhrases()*.label
 	return actions
 }
@@ -148,22 +157,48 @@ def executeRoutine(){
 //in the future...
 def deviceHandler(evt) {}
 
-private void update(devices) {
-	log.debug "update, request: params: ${params}, devices: $devices.id"
-	//def command = request.JSON?.command
-    def command = params.command    
+private void setlevel(devices){
+	def command = params.command
+    
+    if(command)
+    {
+    	def device = devices.find { it.id == params.id }
+        if(!device) {
+        	httpError(404, "Device not found")
+        } else {
+        	if(command == "level")
+            {
+            	device.setLevel(params.value as int)
+            }
+        }
+    }
+}
+
+private update(devices) {
+    def command = params.command   
+    
 	if (command){
 		def device = devices.find { it.id == params.id }
 		if (!device) {
 			httpError(404, "Device not found")
 		} else {
         	if(command == "toggle"){
-            	if(device.currentValue('switch') == "on")
+            	if(device.currentValue('switch') == "on"){
                   device.off();
-                else
+                  [status: "off"]}
+                else{
                   device.on();
+                  [status: "on"]}
        		}else{
 				device."$command"()
+                if(command == "on" || command == "off")
+                {
+                	[status: command]
+                }
+                else if(command == "lock" || command == "unlock")
+                {
+                	[status: command + "ed"]
+                }
             }
 		}
 	}
@@ -176,12 +211,12 @@ private show(devices, type) {
 	} else {
 		def attributeName = type == "motionSensor" ? "motion" : type
 		def s = device.currentState(attributeName)
-		[id: device.id, label: device.displayName, value: s?.value, unitTime: s?.date?.time, type: type]
+		[id: device.id, label: device.displayName, level: it.currentValue("level"), value: s?.value, unitTime: s?.date?.time, type: type]
 	}
 }
 
 private device(it, type) {
 	def attributeName = type == "motionSensor" ? "motion" : type
 	def s = it.currentState(attributeName)
-	it ? [id: it.id, label: it.label, value: s?.value, type: type] : null
+	it ? [id: it.id, label: it.label, level: it.currentValue("level"), value: s?.value, type: type] : null
 }

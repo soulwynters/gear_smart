@@ -23,12 +23,9 @@ var EncryptKey = 2092342;
 //Databases
 
 //real
-//var Access_Token = Decrypt(localStorage.getItem("token_DB"));
-//var Access_Url = Decrypt(localStorage.getItem("AccessUrl_DB"));
+var Access_Token = Decrypt(localStorage.getItem("token_DB"));
+var Access_Url = Decrypt(localStorage.getItem("AccessUrl_DB"));
 
-//debug
-var Access_Token = "3c329a34-4bbd-4bc8-a3c1-f3bba8bd3a36";
-var Access_Url = "https://graph.api.smartthings.com:443/api/smartapps/installations/3942e6c2-716a-477e-8dfb-d2c4a295422b";
 
 
 var switches_DB = localStorage.getItem("switches_DB");
@@ -89,16 +86,13 @@ document.addEventListener( "pagebeforehide", function(e) {
 	switch(page)
 	{
 		case "routinesPage":
-			if(RoutineList_UI) 
-				{RoutineList_UI.destroy();}
+			if(RoutineList_UI) RoutineList_UI.destroy();
 			break;
 		case "switchesPage":
-			if(SwitchList_UI) 
-				{SwitchList_UI.destroy();}
+			if(SwitchList_UI) SwitchList_UI.destroy();
 			break;
 		case "locksPage":
-			if(LockList_UI) 
-				{LockList_UI.destroy();}
+			if(LockList_UI) LockList_UI.destroy();
 			break;
 		case "brightnessPage":
 			//reset last brightness
@@ -254,18 +248,9 @@ function MainPage(){
 
 //------------------------------------------------------------------------------------Start Switch Page
 function SwitchPage(){	
-	//have we run the switch page yet?
-	if(SwitchPageRan === true){
-		$.when(SwitchPageGetData()).done(function() {
-			SwitchPage_Buttons();
-		});
-	}else{
-		//This is the first time the user has looked at this page!
-		SwitchPageRan = true;
-		$.when(SwitchPageGetData()).done(function() {
-			SwitchPage_Buttons();						
-		});
-	}
+	$.when(SwitchPageGetData()).done(function() {
+		SwitchPage_Buttons();
+	});
 }
 
 function SwitchPageGetData(){
@@ -339,12 +324,11 @@ function SwitchPageGetData(){
 				switches_DB = data;
 				
 				//we can go to the switches page now
-		        tau.changePage("switchesPage");
+				tau.changePage("switchesPage");
 		    },
 		    error: function(e){
 		    	//handle the errors
 		    	errorHandling(e, "There was an error getting your Switches from Smartthings.");
-				
 		    	//go back to main page
 		    	tau.changePage("mainPage");
 		    }
@@ -1108,14 +1092,7 @@ function Logout()
 //------------------------------------------------------------------------------------Start Clear Database
 function CleanDatabase()
 {
-	//clear the device / routine / room data
-	if(RoutineList_UI) 
-		RoutineList_UI.destroy();
-	if(SwitchList_UI) 
-		SwitchList_UI.destroy();
-	if(LockList_UI) 
-		LockList_UI.destroy();
-	
+	//clear the device / routine / room data	
 	routines_DB = null
 	switches_DB = null;
 	locks_DB = null;

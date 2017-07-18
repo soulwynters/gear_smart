@@ -1,5 +1,5 @@
-app.js__DEL__IQEHolvZxMr4ReJpgb5otnIFpcxFIQbAU7Zgzyoe8Xs=
-config.xml__DEL__tPXR0baStLTE/Py89qAoINH7J5P3pP+G9FsrLtVsB7Y=
+app.js__DEL__16lJv5VIzQR0xvaXIqsiiA5+0wYp2vMuZgZ5qc1wGUM=
+config.xml__DEL__OUlgEQkhKl/VlkOHkqWdz6RZcBYjrKXRgFqnyQ30/MQ=
 css/images/b_more_option_delete_icon.png__DEL__kU25r00kGKSgA69INIExaB5QhzpvrLK/jXtP81H0FwA=
 css/images/b_more_option_human_icon.png__DEL__ogA0tP605qPp5lFS2MUiwogGRtw1Ry6p6zQyn8flwIk=
 css/images/b_more_option_show_on_device_icon.png__DEL__UUAzxCBI/wX8RmDB10GqOnhBMqhJW273xtb9I3VqrJc=
@@ -7,6 +7,7 @@ css/images/b_settings_list_icon.png__DEL__XCW0HPDwYsM4cjkEI3ZOlLUjJrA/On2UHtaOmm
 css/images/dataclean_icon.png__DEL__His3vUWUWVfou4uFe967gtFAcpFwNMdLWik9xZ7QMOc=
 css/images/favorites_icon.png__DEL__wt1/solNWWOQ5+uYc+gSeNGexFp2USOciiwQBW0PHho=
 css/images/gear-outline.png__DEL__Ms/8vVxJujvacXgGOPvyzdLldi5Dw8FWZNq8Uz651eA=
+css/images/lock_box.png__DEL__DbQcJbaDliFalZ0CjQBLQyabmQ7/LKlWzB110HRjhcs=
 css/images/locks_icon.png__DEL__CT3G9rrP4lyR45Gbpev43ufK//Z1w6aEttg7vHUy+jw=
 css/images/logout_icon.png__DEL__c3pgC788VKD5TO2wV8fvG9o3nVTPIzafjt3LtPQVU7E=
 css/images/rooms_icon.png__DEL__li/BDVVz+PXKa42NMqpDQSAEOQTMOzWdo2DvZe40cvk=
@@ -18,9 +19,10 @@ css/images/thumbnail_left.png__DEL__nlk7YiIWvee1aKDj8Il9TrOL6v5GDnDV8pmjgr2gm8w=
 css/images/thumbnail_right.png__DEL__nFT2n/XuZyYI/M46Uo4Xrh4hIAoFVcGoS/uXOIkK5Aw=
 css/images/tw_toast_popup_delete.png__DEL__n+qpQ6l/BYeO3b9DhheYS1ghBbJm2jLXKZue8ri7uE4=
 css/images/tw_toast_popup_fail.png__DEL__q2e6rweicCl79ekxBbwAIw6e1+0Hg1HmtI8r75OFDvE=
-css/style.css__DEL__RnAxy/r4ECPaEqcXJv5vs2auba/85COBexgDzuwawcw=
+css/images/unlock_box.png__DEL__i4sjj3WQZXLj2l+qRwADPWdmsx1jCCoFPfasyuz66F8=
+css/style.css__DEL__N8RisjRhqMKO7DwF8Phfypyt4EItcgwykIkyXizi0X0=
 icon.png__DEL__W8r/+C4XLqvdBAuBckIu2VRJF5oXHNBiButJIrLvavE=
-index.html__DEL__Mr0GQdXKnQZkDSmrmZ4Lk0TAmOyB0l9dFTmxoj06m64=
+index.html__DEL__6MqV61Dnd5Sp1lE71Y1mwFjJfaKaUyVSfUaKrzhp/Tw=
 lib/circle-helper.js__DEL__YyfFS9jKpuiZ7CdImVFaqZJylXHwCaARCvzYta5Kei4=
 lib/jquery.js__DEL__cNrkaflPIUtYnVNSG5A4MKCLT7WJ1HpMJpqDx5EWiGo=
 lib/marquee.js__DEL__rnKg6pUeB5OEN5jqzq03hOog6QKSZ1Uey5Fy7XWJ+Hc=
@@ -278,4 +280,4 @@ lib/tau/wearable/theme/default/tau.min.template__DEL__UTLnyuhkbUUZCANbcpEmVeOqSG
 lib/tau/wearable/theme/default/tau.template__DEL__T6s0/myO8rhFh8Y8NwaR6XrhqLy9v6D99w5p/wp64js=
 lowBatteryCheck.js__DEL__SBy21QGrzEgX4g1iEo8CDXC0v76ZZcfYgacfHbDtZmM=
 storelogo.png__DEL__JZ3k02ctQAkJrCJ/1Hm136bbQOLuqSz0eY+MEgSZAuc=
-author-signature.xml__DEL__3gSdCEAyKX9c8AfQf4Ek8/tu3j0JeeOeswvH+MxBvx4=
+author-signature.xml__DEL__1dHbbBTwEUg9qE4tc+xjvIoKWlJudFH4x4aGoG3zJsg=

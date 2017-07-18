@@ -7,6 +7,8 @@ var SwitchPageRan = false;
 var RoutinesPageRan = false;
 var setupPageRan = false;
 
+var pollInterval;
+
 //brightness vars - these need to be global to be accessible in all required methods
 var brightnessBarWidget;
 var brightnessPage = document.getElementById("brightnessPage");
@@ -15,7 +17,7 @@ var setBright;
 var changeBright;
 
 //Polling interval in ms for token
-var pollingInt = 20000;
+var pollingInt = 10000;
 
 //Encrypt Key (This should be set by the user)
 var EncryptKey = 2092342;
@@ -25,8 +27,6 @@ var EncryptKey = 2092342;
 //real
 var Access_Token = Decrypt(localStorage.getItem("token_DB"));
 var Access_Url = Decrypt(localStorage.getItem("AccessUrl_DB"));
-
-
 
 var switches_DB = localStorage.getItem("switches_DB");
 var routines_DB = localStorage.getItem("routines_DB");
@@ -90,9 +90,11 @@ document.addEventListener( "pagebeforehide", function(e) {
 			break;
 		case "switchesPage":
 			if(SwitchList_UI) SwitchList_UI.destroy();
+			clearInterval(pollInterval);
 			break;
 		case "locksPage":
 			if(LockList_UI) LockList_UI.destroy();
+			clearInterval(pollInterval);
 			break;
 		case "brightnessPage":
 			//reset last brightness
@@ -165,7 +167,7 @@ function SetupPage(){
 function MainPage(){
 	//is the access token set?
 	if(Access_Token){
-		//do we have the write smartapp version?
+		//do we have the right smartapp version?
 		CheckSmartAppVersion();
 		//has the user been here before?
 		if(MainPageRan === false){
@@ -182,7 +184,7 @@ function MainPage(){
 			//access token is not set. 
 			tau.changePage("setupPage");
 		}else{
-			//do we have the write smartapp version?
+			//do we have the right smartapp version?
 			CheckSmartAppVersion();
 		}
 	}
@@ -261,18 +263,21 @@ function SwitchPageGetData(){
 	//We have switch data stored!
 	if(switches_DB !== null){ 
 		try {
-			//get the switches as a json object
-			var obj = jQuery.parseJSON(switches_DB);
 			
-			//build the list with the existing data we have
-			$.each(obj, function(index, element) {
+			//get the switches
+			for(var i=0; i< Object.keys(switches_DB).length; i++){
+				
+				var element = switches_DB[Object.keys(switches_DB)[i]];
+				
 				var id = element.id;
 				var label = element.label;
 				var value = element.value;
 				var type = element.type;	
 				var level = element.level;
 				var checked = "";
-				if(value == "on"){ checked = "checked"; }			        	
+				
+				if(value == "on"){ checked = "checked"; }	
+				
 				$('#Switches').append('\
 					<li class="li-has-checkbox">\
 						<div class="ui-marquee ui-marquee-gradient marquee switch-label">'+label+'</div>\
@@ -280,12 +285,7 @@ function SwitchPageGetData(){
 						<div class="ui-processing" style="display:none;"></div>\
 					</li>\
 				');
-			});
-			$('#Switches').append('\
-				<li class="">\
-					<div id="RefreshSwitchData" class="ui-marquee ui-marquee-gradient marquee">Refresh Data</div>\
-				</li>\
-			');
+			}
 
 			//fancy GUI stuff
 			var switcherr = document.getElementById("Switches");
@@ -293,6 +293,8 @@ function SwitchPageGetData(){
 				marqueeDelay: 0,
 				marqueeStyle: "endToEnd"
 			});
+			
+			pollInterval = setInterval(pollSwitches, 5000);
 			
 		} catch (e) {
 			//some error happened, invalid json stored?
@@ -309,30 +311,7 @@ function SwitchPageGetData(){
 		$('#ProcessingMsg').html('Retrieving Switches From SmartThings');
 		tau.changePage("processingPage");
 		
-		//get those switches
-		$.get({
-		    url: Access_Url + "/switches",
-		    beforeSend: function(xhr) { 
-		      xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
-		    },
-		    success: function (data) {
-		    	//get the response as a string and send to the database
-		    	data = JSON.stringify(data);
-				localStorage.setItem("switches_DB", data);
-				
-				//lets get the json version stored in our global switches var
-				switches_DB = data;
-				
-				//we can go to the switches page now
-				tau.changePage("switchesPage");
-		    },
-		    error: function(e){
-		    	//handle the errors
-		    	errorHandling(e, "There was an error getting your Switches from Smartthings.");
-		    	//go back to main page
-		    	tau.changePage("mainPage");
-		    }
-		});
+		updateSwitchStatus(false);
 	}
 }
 
@@ -358,21 +337,6 @@ function SwitchPage_Buttons()
 		}else{
 			alert("This device does not support dimming.");
 		}
-	});
-	
-	//hanndle the click of the refresh switches button
-	$('#RefreshSwitchData').click(function(){
-		//clear the switch db and global var
-		localStorage.setItem("switches_DB", null);
-		switches_DB = null;
-		$('#Switches').html('');
-		
-		//set the processing message and show processing page
-		$('#ProcessingMsg').html('Retrieving Switches From SmartThings');
-		tau.changePage("processingPage");
-		
-		//wait 2 seconds and change to switches page
-		setTimeout(function(){ tau.changePage("switchesPage"); }, 2000); //:)
 	});
 
 	//user pressed a switch
@@ -644,30 +608,27 @@ function LockPageGetData(){
 	//We have switch data stored!
 	if(locks_DB !== null){ 
 		try {
-			//get the switches as a json object
-			var obj = jQuery.parseJSON(locks_DB);
-			
-			//build the list with the existing data we have
-			$.each(obj, function(index, element) {
+			//get the switches
+			for(var i=0; i< Object.keys(locks_DB).length; i++){
+				
+				var element = locks_DB[Object.keys(locks_DB)[i]];
+				
 				var id = element.id;
 				var label = element.label;
 				var value = element.value;
 				var type = element.type;	
 				var checked = "";
-				if(value == "locked"){ checked = "checked"; }			        	
+				
+				if(value == "locked"){ checked = "checked"; }	
+				
 				$('#Locks').append('\
 					<li class="li-has-checkbox">\
 						<div class="ui-marquee ui-marquee-gradient marquee switch-label">'+label+'</div>\
-						<input class="alock" deviceid="'+id+'" type="checkbox" ' + checked + '/>\
+						<input class="alock" deviceid="'+id+'"  type="checkbox" ' + checked + '/>\
 						<div class="ui-processing" style="display:none;"></div>\
 					</li>\
 				');
-			});
-			$('#Locks').append('\
-				<li class="">\
-					<div id="RefreshLockData" class="ui-marquee ui-marquee-gradient marquee">Refresh Data</div>\
-				</li>\
-			');
+			}
 
 			//fancy GUI stuff
 			var lockerr = document.getElementById("Locks");
@@ -675,6 +636,7 @@ function LockPageGetData(){
 				marqueeDelay: 0,
 				marqueeStyle: "endToEnd"
 			});
+			pollInterval = setInterval(pollLocks, 5000);
 			
 		} catch (e) {
 			//some error happened, invalid json stored?
@@ -691,58 +653,13 @@ function LockPageGetData(){
 		$('#ProcessingMsg').html('Retrieving Locks From SmartThings');
 		tau.changePage("processingPage");
 		
-		//get those switches
-		$.get({
-		    url: Access_Url + "/locks",
-		    beforeSend: function(xhr) { 
-		      xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
-		    },
-		    success: function (data) {
-		    	if(Object.keys(data).length !== 0)
-		    	{
-			    	//get the response as a string and send to the database
-			    	data = JSON.stringify(data);
-					localStorage.setItem("locks_DB", data);
-					//lets get the json version stored in our global switches var
-					locks_DB = data;
-					
-					//we can go to the locks page now
-			        tau.changePage("locksPage");
-		    	}else{
-		    		//no locks found
-		    		alert("No locks found, make sure you have allowed your locks in the SmartApp.");
-		    		//go back to main page
-			    	tau.changePage("mainPage");
-		    	}
-		    },
-		    error: function(e){
-		    	//handle the errors
-		    	errorHandling(e, "There was an error getting your Switches from Smartthings.");
-				
-		    	//go back to main page
-		    	tau.changePage("mainPage");
-		    }
-		});
+		updateLockStatus(false);
+		
 	}
 }
 
 function LockPage_Buttons()
 {	
-	//hanndle the click of the refresh switches button
-	$('#RefreshLockData').click(function(){
-		//clear the switch db and global var
-		localStorage.setItem("locks_DB", null);
-		locks_DB = null;
-		$('#Locks').html('');
-		
-		//set the processing message and show processing page
-		$('#ProcessingMsg').html('Retrieving Locks From SmartThings');
-		tau.changePage("processingPage");
-		
-		//wait 2 seconds and change to switches page
-		setTimeout(function(){ tau.changePage("locksPage"); }, 2000); //:)
-	});
-
 	//user pressed a switch
 	$(".alock").change(function(){
 		
@@ -932,31 +849,160 @@ function getStatus(auth_id)
 
 //------------------------------------------------------------------------------------End Poll for Status of Auth
 
+//------------------------------------------------------------------------------------Start Poll Switch Status'
+
+function pollSwitches()
+{
+	updateSwitchStatus(true);
+}
+
+//------------------------------------------------------------------------------------End Poll for Switch Status
+
+//------------------------------------------------------------------------------------Start Update Switch Status'
+
+function updateSwitchStatus(refresh)
+{
+	//get those switches
+	$.get({
+	    url: Access_Url + "/switches",
+	    beforeSend: function(xhr) { 
+	      xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
+	    },
+	    success: function (data) {
+	    	//get the response as a string and send to the database
+	    	var switch_data = [];
+	    	
+	    	var somethingChanged = false;
+	    	var statusChanged = false;
+	    	var levelChanged = false;
+	    	
+	    	for(var i = 0; i < data.length; i++)
+    		{
+	    		switch_data[data[i].id] = new Object();
+	    		switch_data[data[i].id].id = data[i].id;
+	    		switch_data[data[i].id].label = data[i].label;
+	    		switch_data[data[i].id].value = data[i].value;
+	    		switch_data[data[i].id].type = data[i].type;
+	    		switch_data[data[i].id].level = data[i].level;
+	    		
+	    		if(refresh && switches_DB != null)
+    			{
+	    			statusChanged = switch_data[data[i].id].value != switches_DB[data[i].id].value;
+	    			levelChanged = switch_data[data[i].id].level != switches_DB[data[i].id].level;
+	    			
+	    			if(statusChanged || levelChanged)
+	    			{
+		    			var checked = "";
+						
+						if(switch_data[data[i].id].value == "on"){ checked = "checked"; }	
+						
+						$("#Switches li input[deviceid='" + data[i].id + "']").attr('levelvalue', switch_data[data[i].id].level);
+						$("#Switches li input[deviceid='" + data[i].id + "']").prop('checked', checked);
+						
+						somethingChanged = true;
+	    			}
+    			}
+    		}
+	    	
+	    	if(!refresh || (refresh && somethingChanged))
+    		{
+	    		localStorage.setItem("switches_DB", switch_data);
+	    		//lets get the json version stored in our global switches var
+				switches_DB = switch_data;
+				
+				//we can go to the switches page now
+				tau.changePage("switchesPage");
+    		}
+			
+	    },
+	    error: function(e){
+	    	//handle the errors
+	    	errorHandling(e, "There was an error getting your Switches from Smartthings.");
+	    	tau.changePage("mainPage");
+	    }
+	});
+}
+
+function pollLocks()
+{
+	updateLockStatus(true);
+}
+
+
+//------------------------------------------------------------------------------------Start Update Switch Status'
+
+function updateLockStatus(refresh) 
+{
+	//get those switches
+	$.get({
+	    url: Access_Url + "/locks",
+	    beforeSend: function(xhr) { 
+	      xhr.setRequestHeader('Authorization','Bearer ' + Access_Token);
+	    },
+	    success: function (data) {
+	    	if(Object.keys(data).length !== 0)
+	    	{
+		    	var lock_data = [];
+
+		    	var somethingChanged = false;
+		    	var statusChanged = false;
+		    	
+		    	for(var i = 0; i < data.length; i++)
+	    		{
+		    		lock_data[data[i].id] = new Object();
+		    		lock_data[data[i].id].id = data[i].id;
+		    		lock_data[data[i].id].label = data[i].label;
+		    		lock_data[data[i].id].value = data[i].value;
+		    		lock_data[data[i].id].type = data[i].type;
+		    		
+		    		if(refresh && locks_DB != null)
+	    			{
+		    			statusChanged = lock_data[data[i].id].value != locks_DB[data[i].id].value;
+		    			
+		    			if(statusChanged)
+		    			{
+			    			var checked = "";
+							
+							if(lock_data[data[i].id].value == "locked"){ checked = "checked"; }
+							$("#Locks li input[deviceid='" + data[i].id + "']").prop('checked', checked);
+							
+							somethingChanged = true;
+		    			}
+	    			}
+	    		}
+		    	
+		    	if(!refresh || (refresh && somethingChanged))
+	    		{
+		    		localStorage.setItem("locks_DB", lock_data);
+		    		//lets get the json version stored in our global switches var
+		    		locks_DB = lock_data;
+
+		    		tau.changePage("locksPage");
+	    		}
+	    	}else{
+	    		//no locks found
+	    		alert("No locks found, make sure you have allowed your locks in the SmartApp.");
+	    		//go back to main page
+		    	tau.changePage("mainPage");
+	    	}
+	    },
+	    error: function(e){
+	    	//handle the errors
+	    	errorHandling(e, "There was an error getting your Switches from Smartthings.");
+			
+	    	//go back to main page
+	    	
+	    }
+	});
+}
 
 //------------------------------------------------------------------------------------Start Update SwitchDB
 
 function updateDeviceDB(switchId, status, dbToUpdate)
 {
-	//get json object version of our database - we can access a global object by string by calling window["global_object"]
-	var jsonDevices = JSON.parse(window[dbToUpdate]);
+	window[dbToUpdate][switchId].value = status;
+	localStorage.setItem(dbToUpdate, window[dbToUpdate]);
 	
-	//loop through the devices inside
-	for(var i = 0; i < jsonDevices.length; i++)
-	{
-		//find the device to update in the db
-		if(jsonDevices[i].id == switchId)
-		{
-			//set the status to the returned status from the smartapp
-			jsonDevices[i].value = status;
-			
-			//update the global db var as well as the local storage so we have the most up to date info
-			window[dbToUpdate] = JSON.stringify(jsonDevices);
-			localStorage.setItem(dbToUpdate, window[dbToUpdate]);
-			
-			//break free so we don't keep looping through devices further than we have to
-			break;
-		}
-	}
 }
 
 //------------------------------------------------------------------------------------Start Update SwitchDB
@@ -965,26 +1011,8 @@ function updateDeviceDB(switchId, status, dbToUpdate)
 
 function updateBrightnessDB(switchId, level, dbToUpdate)
 {
-	//get json object version of our database - we can access a global object by string by calling window["global_object"]
-	var jsonDevices = JSON.parse(window[dbToUpdate]);
-	
-	//loop through the devices inside
-	for(var i = 0; i < jsonDevices.length; i++)
-	{
-		//find the device to update in the db
-		if(jsonDevices[i].id == switchId)
-		{
-			//set the status to the returned status from the smartapp
-			jsonDevices[i].level = level;
-			
-			//update the global db var as well as the local storage so we have the most up to date info
-			window[dbToUpdate] = JSON.stringify(jsonDevices);
-			localStorage.setItem(dbToUpdate, window[dbToUpdate]);
-			
-			//break free so we don't keep looping through devices further than we have to
-			break;
-		}
-	}
+	window[dbToUpdate][switchId].level = level;
+	localStorage.setItem(dbToUpdate, window[dbToUpdate]);
 }
 
 //------------------------------------------------------------------------------------Start Update Db Brightness

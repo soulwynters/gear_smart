@@ -6,13 +6,17 @@
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
 <DigestValue>16lJv5VIzQR0xvaXIqsiiA5+0wYp2vMuZgZ5qc1wGUM=</DigestValue>
 </Reference>
+<Reference URI="app_icon.png">
+<DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
+<DigestValue>fjXD1OW9sH9cZY0SlQvI9pjwQhh+q9VhUNqseHXeGN0=</DigestValue>
+</Reference>
 <Reference URI="author-signature.xml">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
-<DigestValue>1dHbbBTwEUg9qE4tc+xjvIoKWlJudFH4x4aGoG3zJsg=</DigestValue>
+<DigestValue>aWoBmIsw/7V+9N/kOQzYqCTQOvG5CMJMLzhR9jZlLHg=</DigestValue>
 </Reference>
 <Reference URI="config.xml">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
-<DigestValue>OUlgEQkhKl/VlkOHkqWdz6RZcBYjrKXRgFqnyQ30/MQ=</DigestValue>
+<DigestValue>g1Fygnr2lhLkvHLrTDVCrc/vX2HAuPMeNmz9WpK6eV4=</DigestValue>
 </Reference>
 <Reference URI="css%2Fimages%2Fb_more_option_delete_icon.png">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
@@ -97,10 +101,6 @@
 <Reference URI="css%2Fstyle.css">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
 <DigestValue>N8RisjRhqMKO7DwF8Phfypyt4EItcgwykIkyXizi0X0=</DigestValue>
-</Reference>
-<Reference URI="icon.png">
-<DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
-<DigestValue>W8r/+C4XLqvdBAuBckIu2VRJF5oXHNBiButJIrLvavE=</DigestValue>
 </Reference>
 <Reference URI="index.html">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
@@ -1130,9 +1130,9 @@
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
 <DigestValue>SBy21QGrzEgX4g1iEo8CDXC0v76ZZcfYgacfHbDtZmM=</DigestValue>
 </Reference>
-<Reference URI="storelogo.png">
+<Reference URI="smarter_things_logo.png">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></DigestMethod>
-<DigestValue>JZ3k02ctQAkJrCJ/1Hm136bbQOLuqSz0eY+MEgSZAuc=</DigestValue>
+<DigestValue>6YE6VoBscexatOklwdwexx3H02EpGdPIRVavTtR+Eek=</DigestValue>
 </Reference>
 <Reference URI="#prop">
 <Transforms>
@@ -1143,11 +1143,11 @@
 </Reference>
 </SignedInfo>
 <SignatureValue>
-gLd+qY2xr/N5bTlLDjkh6SFOfM1qCZVfRLz6R/v8rHtJcsjO1bhaDeiT3s2S7pS6+kjWEeDCY+Ec
-aKcE8hzf4lmuCshtdoUy30i5E5dbqdjDlqijUMm7WOUV8mth0qLks0zndFlJtlyfp/0HUsdB0mwb
-5a1iz2b8miZFq8b5HWxAaz4CPbnCec2a5hXVdK5fO/RxiBrlthtydPrH2aVqlcxm9e8O4+P4Pw69
-UEo3Ez0mNq2ESZ90w3bhTpu0RW5aKBObQEHq2KRl49EH70XAzatxG70aE0g1Y3J7u06u7VHYClMW
-Vcb35K+9WD75pXRpHvEq0WrvvKCVylY03FkZmw==
+fZa87AoZwoT+GS9CezZ8c40q6Kxdx4jM8XkH6QeCw3EfOBMkJC0QPUwlbGvSwSFgOewVfG23Vdyz
+A5gbJl80F1SqRWoNXBldauMA2UX2pnYNA5lpLlQxzFqsyYk1/2PgW0DPlq/W/0d68qd3yx2ejTx2
++xkH11sHG9H2SoqqZhezhlGrjKakyVo2cFE0fPpJJ4z2SYsA/e/fOprJtzIUn/mz9ZqRz+6HIvDK
+mQAwtxe/UeWTSYTTWkF4B9e9Py0hBF+0dPo7QbDjymQEcvLY8o4fxCMKAMK5ZRP/XuQrzAmBMZJZ
+Lb/JCNrTFpQOKakkCHAQPa8mA+Nlxyhtl3pSzw==
 </SignatureValue>
 <KeyInfo>
 <X509Data>

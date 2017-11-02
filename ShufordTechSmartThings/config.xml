@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="https://timothyfenton.com/smarterauth" version="1.3.0" viewmodes="maximized">
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="https://smarterauth.com" version="1.3.2" viewmodes="maximized">
     <access origin="*" subdomains="true"></access>
     <tizen:application id="HLLvo0px34.ShufordTechSmartThings" package="HLLvo0px34" required_version="2.3"/>
-    <author href="https://timothyfenton.com/smarterauth" email="venumx@live.com">Timothy Fenton</author>
+    <author href="https://www.smarterauth.com" email="venumx@live.com">Timothy Fenton</author>
     <content src="index.html"/>
     <feature name="http://tizen.org/feature/screen.size.normal"/>
     <feature name="http://tizen.org/feature/network.internet"/>
     <feature name="http://tizen.org/feature/download"/>
-    <icon src="icon.png"/>
-    <name>SmarterThings</name>
+    <icon src="app_icon.png"/>
+    <name>smarter things</name>
     <tizen:privilege name="http://tizen.org/privilege/power"/>
     <tizen:privilege name="http://tizen.org/privilege/unlimitedstorage"/>
     <tizen:privilege name="http://tizen.org/privilege/filesystem.read"/>

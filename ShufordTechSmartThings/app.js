@@ -1,6 +1,9 @@
 //minimum smartapp version for functions to work correctly.
 var SMARTAPP_VERSION = "1.0.1";
 
+//smarterauth connector api - if you are a developer, request an access token to - venumx@live.com
+var SC_API_KEY = "";
+
 //Page Views
 var MainPageRan = false;
 var SwitchPageRan = false;
@@ -19,7 +22,7 @@ var changeBright;
 //Polling interval in ms for token
 var pollingInt = 10000;
 
-//Encrypt Key (This should be set by the user)
+//Encrypt Key
 var EncryptKey = 2092342;
 
 //Databases
@@ -138,7 +141,7 @@ function SetupPage(){
 		type: "POST",
 		data: { },
 		headers: {
-		    "Authorization": "Token 98b7d003-4701-40fb-8295-b2dded696f26"
+		    "Authorization": "Token " + SC_API_KEY
 		  },
 		success: function(json){
 			//assign it to the local variable
